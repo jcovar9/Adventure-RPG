@@ -20,9 +20,16 @@ func _init(_cP:Vector2i, _cS:int, _mE:int, _nG:NoiseGenerator, _tA:TerrainAssets
 
 func RenderChunk() -> void:
 	for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
+		var currRenderCoord := Vector2i(x, chunkPosition.y + chunkSize - 1)
 		for y in range(chunkPosition.y + chunkSize - 1, chunkPosition.y - 1, -1):
-			RenderTile(x, y)
-			
+			var currTileCoord := Vector2i(x, y)
+			var localHeights : Dictionary = GetLocalHeights(currTileCoord)
+			var relations : String = GetRelations(localHeights)
+			var atlasCoords : Array = terrainAssets.GetAtlasCoords(relations)
+			var tilesToRender : int = absi(currTileCoord.y - localHeights["C"]) - absi(currRenderCoord.y)
+			if tilesToRender == 0:
+				pass
+
 
 func RenderTile(x : int, y : int) -> void:
 	var localHeights : Dictionary = GetLocalHeights(Vector2i(x,y))
@@ -78,25 +85,25 @@ func CorrectIncompatibleHeight(vector : Vector2i) -> void:
 	while madeChange:
 		var center : int = heights["C"]
 		madeChange = false
-		if ((heights["N"] < center and heights["S"] < center) #check top & bottom
-			or
-			(heights["W"] < center and heights["E"] < center) #check left & right
-			or #check top,left,right,bottom
-			((heights["N"] == center and heights["W"] == center and heights["E"] == center and heights["S"] == center)
-				and #check diagonals
-				((heights["NW"] < center and heights["SE"] < center) or (heights["NE"] < center and heights["SW"] < center)))
-			or #check bridge cases
-			(	(heights["S"] < center and ((heights["NW"] < center and heights["E"] < center)
-											or
-											(heights["NE"] < center and heights["W"] < center)))
-				or
-				(heights["N"] < center and ((heights["E"] < center and heights["SW"] < center)
-											or
-											(heights["W"] < center and heights["SE"] < center)))
-			)):
-				heightMap[vector] -= 1.0
-				heights["C"] -= 1
-				#madeChange = true
+#		if ((heights["N"] < center and heights["S"] < center) #check top & bottom
+#			or
+#			(heights["W"] < center and heights["E"] < center) #check left & right
+#			or #check top,left,right,bottom
+#			((heights["N"] == center and heights["W"] == center and heights["E"] == center and heights["S"] == center)
+#				and #check diagonals
+#				((heights["NW"] < center and heights["SE"] < center) or (heights["NE"] < center and heights["SW"] < center)))
+#			or #check bridge cases
+#			(	(heights["S"] < center and ((heights["NW"] < center and heights["E"] < center)
+#											or
+#											(heights["NE"] < center and heights["W"] < center)))
+#				or
+#				(heights["N"] < center and ((heights["E"] < center and heights["SW"] < center)
+#											or
+#											(heights["W"] < center and heights["SE"] < center)))
+#			)):
+#				heightMap[vector] -= 1.0
+#				heights["C"] -= 1
+#				madeChange = true
 		
 		if ((heights["N"] > center and heights["S"] > center) #check top & bottom
 			or
@@ -116,7 +123,7 @@ func CorrectIncompatibleHeight(vector : Vector2i) -> void:
 			)):
 				heightMap[vector] += 1.0
 				heights["C"] += 1
-				#madeChange = true
+				madeChange = true
 
 
 func GetLocalHeights(vector : Vector2i) -> Dictionary:
