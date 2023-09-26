@@ -57,8 +57,8 @@ func DrawTile(coord : Vector2i, atlasCoord : Vector2i) -> void:
 	tileMap.set_cell(0, coord, 0, atlasCoord, 0)
 
 
-func GetAtlasCoords(relations : String) -> Array:
-	var atlasCoords : Array
+func GetAtlasCoords(relations : String) -> Array[Vector2i]:
+	var atlasCoords : Array[Vector2i]
 	if tileDict.has(relations):
 		atlasCoords = tileDict[relations]
 	else:

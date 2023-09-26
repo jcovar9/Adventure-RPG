@@ -20,32 +20,37 @@ func _init(_cP:Vector2i, _cS:int, _mE:int, _nG:NoiseGenerator, _tA:TerrainAssets
 
 func RenderChunk() -> void:
 	for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
-		var currRenderCoord := Vector2i(x, chunkPosition.y + chunkSize - 1)
+		var renderCoord := Vector2i(x, chunkPosition.y + chunkSize - 1)
 		for y in range(chunkPosition.y + chunkSize - 1, chunkPosition.y - 1, -1):
-			var currTileCoord            := Vector2i(x, y)
-			var localHeights : Dictionary = GetLocalHeights(currTileCoord)
-			var relations : String        = GetRelations(localHeights)
-			var atlasCoords : Array       = terrainAssets.GetAtlasCoords(relations)
+			var currentTile := Vector2i(x, y)
+			var localHeights : Dictionary = GetLocalHeights(currentTile, GetLocalVectors(currentTile))
+			var relations : String = GetRelations(localHeights)
+			var atlasCoords : Array[Vector2i] = terrainAssets.GetAtlasCoords(relations)
 			
-			var tilePeakYPos : int = currTileCoord.y - localHeights["C"]
-			var tilesToRender : int = currRenderCoord.y - tilePeakYPos + 1
-			if atlasCoords.size() == 1:
-				currRenderCoord.y = tilePeakYPos
-				terrainAssets.DrawTile(currRenderCoord, atlasCoords.front())
-				currRenderCoord.y -= 1
-			elif tilesToRender == 1:
-				terrainAssets.DrawTile(currRenderCoord, atlasCoords.back())
-				currRenderCoord.y -= 1
-			elif tilesToRender > 1:
-				terrainAssets.DrawTile(currRenderCoord, atlasCoords.front())
-				currRenderCoord.y -= 1
+			var currentPeak : int = currentTile.y - localHeights["C"]
+			if y == chunkPosition.y + chunkSize - 1:
+				renderCoord.y = currentPeak
+			
+			if renderCoord.y == currentPeak:
+				#just render the top tile cuz thats all that can be seen
+				terrainAssets.DrawTile(renderCoord, atlasCoords[0])
+				renderCoord.y -= 1
+			elif renderCoord.y > currentPeak:
+				#check how many tiles to render
+				var tilesToRender : int = renderCoord.y - currentPeak + 1
+				terrainAssets.DrawTile(renderCoord, atlasCoords[0])
+				renderCoord.y -= 1
 				tilesToRender -= 1
 				while tilesToRender > 1:
-					terrainAssets.DrawTile(currRenderCoord, atlasCoords[1])
-					currRenderCoord.y -= 1
+					terrainAssets.DrawTile(renderCoord, atlasCoords[1])
+					renderCoord.y -= 1
 					tilesToRender -= 1
-				terrainAssets.DrawTile(currRenderCoord, atlasCoords.back())
-				currRenderCoord.y -= 1
+				terrainAssets.DrawTile(renderCoord, atlasCoords[2])
+				renderCoord.y -= 1
+			else:
+				#do nothing this tile is blocked
+				pass
+			
 
 
 func GetRelations(localHeights : Dictionary) -> String:
@@ -76,7 +81,7 @@ func InitializeHeightMap() -> void:
 	
 	for x in range(0,chunkSize):
 		for y in range(0,chunkSize):
-			CorrectIncompatibleHeight(Vector2i(x + chunkPosition.x, y + chunkPosition.y))
+			RecursivelyFixHeight(Vector2i(x + chunkPosition.x, y + chunkPosition.y))
 	
 	print("\n")
 	
@@ -85,89 +90,95 @@ func InitializeHeightMap() -> void:
 		for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
 			row += str(int(heightMap[Vector2i(x, y)])) + " "
 		print(row)
+	
+	print("\n")
 
-func CorrectIncompatibleHeight(vector : Vector2i) -> void:
-	var heights : Dictionary = GetLocalHeights(vector)
-	var lesserHeights  : Array[String] = []
+
+func RecursivelyFixHeight(vector : Vector2i) -> void:
+	var localVectors : Array[Vector2i] = GetLocalVectors(vector)
+	var localHeights : Dictionary = GetLocalHeights(vector, localVectors)
 	var equalHeights   : Array[String] = []
-	var greaterHeights : Array[String] = []
-	var centerHeight : int = heights["C"]
-	for key in heights:
-		if heights[key] < centerHeight:
-			lesserHeights.append(key)
-		elif heights[key] == centerHeight:
+	var unequalHeights : Array[String] = []
+	var centerHeight : int = localHeights["C"]
+	for key in localHeights:
+		if localHeights[key] == centerHeight:
 			equalHeights.append(key)
 		else:
-			greaterHeights.append(key)
-	if not equalHeights.has("N") and not equalHeights.has("S"):
-		heightMap[vector] = float(mini(heights["N"], heights["S"]))
-		print("(" + str(vector.x) + "," + str(vector.y) + "): " + str(centerHeight) + " -> " + str(mini(heights["N"], heights["S"])))
-	elif not equalHeights.has("W") and not equalHeights.has("E"):
-		heightMap[vector] = float(mini(heights["W"], heights["E"]))
-		print("(" + str(vector.x) + "," + str(vector.y) + "): " + str(centerHeight) + " -> " + str(mini(heights["W"], heights["E"])))
-#	elif (("N" in equalHeights and "W" in equalHeights and "E" in equalHeights and "S" in equalHeights) and
-#		((not "NW" in equalHeights and not "SE" in equalHeights) or (not "NE" in equalHeights and not "SW" in equalHeights))):
-#
-
-func CorrectIncompatibleHeight_(vector : Vector2i) -> void:
-	var heights : Dictionary = GetLocalHeights(vector)
-	var madeChange : bool = true
-	while madeChange:
-		var center : int = heights["C"]
-		madeChange = false
-		if ((heights["N"] < center and heights["S"] < center) #check top & bottom
-			or
-			(heights["W"] < center and heights["E"] < center) #check left & right
-			or #check top,left,right,bottom
-			((heights["N"] == center and heights["W"] == center and heights["E"] == center and heights["S"] == center)
-				and #check diagonals
-				((heights["NW"] < center and heights["SE"] < center) or (heights["NE"] < center and heights["SW"] < center)))
-			or #check bridge cases
-			(	(heights["S"] < center and ((heights["NW"] < center and heights["E"] < center)
-											or
-											(heights["NE"] < center and heights["W"] < center)))
-				or
-				(heights["N"] < center and ((heights["E"] < center and heights["SW"] < center)
-											or
-											(heights["W"] < center and heights["SE"] < center)))
-			)):
-				heightMap[vector] -= 1.0
-				heights["C"] -= 1
-				madeChange = true
-		
-#		if ((heights["N"] > center and heights["S"] > center) #check top & bottom
-#			or
-#			(heights["W"] > center and heights["E"] > center) #check left & right
-#			or #check top,left,right,bottom
-#			((heights["N"] == center and heights["W"] == center and heights["E"] == center and heights["S"] == center)
-#				and #check diagonals
-#				((heights["NW"] > center and heights["SE"] > center) or (heights["NE"] > center and heights["SW"] > center)))
-#			or #check bridge cases
-#			(	(heights["S"] > center and ((heights["NW"] > center and heights["E"] > center)
-#											or
-#											(heights["NE"] > center and heights["W"] > center)))
-#				or
-#				(heights["N"] > center and ((heights["E"] > center and heights["SW"] > center)
-#											or
-#											(heights["W"] > center and heights["SE"] > center)))
-#			)):
-#				heightMap[vector] += 1.0
-#				heights["C"] += 1
-#				madeChange = true
+			unequalHeights.append(key)
+	if FixHeight(vector, localVectors, unequalHeights):
+		for localVector in localVectors:
+			if localVector in heightMap:
+				RecursivelyFixHeight(localVector)
 
 
-func GetLocalHeights(vector : Vector2i) -> Dictionary:
+func FixHeight(vector : Vector2i, localVectors : Array[Vector2i], unequalHeights : Array[String]) -> bool:
+	if ifArrayInArray(["N", "S"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["W", "E"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["NW", "SE"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["NE", "SW"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["S", "NW", "E"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["S", "NE", "W"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["N", "E", "SW"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	elif ifArrayInArray(["N", "W", "SE"], unequalHeights):
+		AdjustHeightMap(vector, localVectors)
+		return true
+	else:
+		return false
+
+
+func AdjustHeightMap(vector : Vector2i, localVectors : Array[Vector2i]) -> void:
+	var heightCounts : Dictionary = {int(GetHeight(vector)) : 1}
+	var mostCommonHeight : int = int(GetHeight(vector))
+	for localVector in localVectors:
+		var localVectorHeight : int = int(GetHeight(localVector))
+		if heightCounts.has(localVectorHeight):
+			heightCounts[localVectorHeight] += 1
+		else:
+			heightCounts[localVectorHeight] = 1
+		if heightCounts[mostCommonHeight] < heightCounts[localVectorHeight]:
+			mostCommonHeight = localVectorHeight
+	heightMap[vector] = mostCommonHeight
+
+
+func ifArrayInArray(keys : Array[String], array : Array[String]) -> bool:
+	for key in keys:
+		if not key in array:
+			return false
+	return true
+
+
+func GetLocalHeights(vector : Vector2i, localVectors : Array[Vector2i]) -> Dictionary:
 	var localHeights : Dictionary = {}
-	localHeights["NW"] = int(GetHeight(Vector2i(vector.x - 1, vector.y - 1)))
-	localHeights["N"]  = int(GetHeight(Vector2i(vector.x    , vector.y - 1)))
-	localHeights["NE"] = int(GetHeight(Vector2i(vector.x + 1, vector.y - 1)))
-	localHeights["W"]  = int(GetHeight(Vector2i(vector.x - 1, vector.y    )))
+	var directions := ["NW","N","NE","W","E","SW","S","SE"]
 	localHeights["C"]  = int(GetHeight(vector))
-	localHeights["E"]  = int(GetHeight(Vector2i(vector.x + 1, vector.y    )))
-	localHeights["SW"] = int(GetHeight(Vector2i(vector.x - 1, vector.y + 1)))
-	localHeights["S"]  = int(GetHeight(Vector2i(vector.x    , vector.y + 1)))
-	localHeights["SE"] = int(GetHeight(Vector2i(vector.x + 1, vector.y + 1)))
+	for i in range(0, directions.size()):
+		localHeights[directions[i]] = int(GetHeight(localVectors[i]))
 	return localHeights
+
+
+func GetLocalVectors(vector : Vector2i) -> Array[Vector2i]:
+	return [Vector2i(vector.x - 1, vector.y - 1),
+			Vector2i(vector.x    , vector.y - 1),
+			Vector2i(vector.x + 1, vector.y - 1),
+			Vector2i(vector.x - 1, vector.y    ),
+			Vector2i(vector.x + 1, vector.y    ),
+			Vector2i(vector.x - 1, vector.y + 1),
+			Vector2i(vector.x    , vector.y + 1),
+			Vector2i(vector.x + 1, vector.y + 1)]
 
 
 func GetHeight(vector : Vector2i) -> float:
