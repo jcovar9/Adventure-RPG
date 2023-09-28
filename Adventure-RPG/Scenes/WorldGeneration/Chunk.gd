@@ -1,5 +1,5 @@
 class_name Chunk
-extends Node2D
+
 
 var chunkPosition : Vector2i
 var chunkSize : int
@@ -17,10 +17,31 @@ func _init(_cP:Vector2i, _cS:int, _mE:int, _nG:NoiseGenerator, _tA:TerrainAssets
 	InitializeHeightMap()
 	RenderChunk()
 
+func RenderChunkTile(chunkTile: Vector2i, lowestVisibleHeight : int):
+	var localHeights : Dictionary = GetLocalHeights(chunkTile, GetLocalVectors(chunkTile))
+	var currentTilePeak : int = chunkTile.y - localHeights["C"]
+	var atlasCoords : Array[Vector2i] = terrainAssets.GetAtlasCoords(localHeights)
+	if currentTilePeak >= lowestVisibleHeight:
+		# our current tile is visible
+		var renderCoord := Vector2i(chunkTile.x, lowestVisibleHeight)
+		while renderCoord.y >= currentTilePeak:
+			# iterate through the blocks we are rendering
+			if renderCoord.y == currentTilePeak:
+				# this is the last block we need to render for this tile
+				terrainAssets.DrawTile(renderCoord, atlasCoords.back())
+
 
 func RenderChunk() -> void:
 	for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
-		var renderCoord := Vector2i(x, chunkPosition.y + chunkSize - 1)
+		var currentChunkTile := Vector2i(x, chunkPosition.y + chunkSize - 1)
+		var currentLocalHeights : Dictionary = GetLocalHeights(currentChunkTile, GetLocalVectors(currentChunkTile))
+		var currentTilePeak : int = currentChunkTile.y - currentLocalHeights["C"]
+		var renderCoord := Vector2i(x, currentTilePeak)
+		while currentChunkTile.y > chunkPosition.y - 1:
+			var tilesToRender : int = renderCoord.y - currentTilePeak + 1
+			
+		
+		
 		for y in range(chunkPosition.y + chunkSize - 1, chunkPosition.y - 1, -1):
 			var currentTile := Vector2i(x, y)
 			var localHeights : Dictionary = GetLocalHeights(currentTile, GetLocalVectors(currentTile))

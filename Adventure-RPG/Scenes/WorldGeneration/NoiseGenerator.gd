@@ -1,5 +1,4 @@
 class_name NoiseGenerator
-extends Node2D
 
 var noiseSeed : int
 var noiseScale : float
