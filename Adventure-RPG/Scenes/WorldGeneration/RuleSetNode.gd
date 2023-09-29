@@ -10,6 +10,12 @@ var any_node : RuleSetNode
 
 func _init():
 	atlas_vectors = []
+	less_greater_node = null
+	greater_equal_node = null
+	less_equal_node = null
+	equal_node = null
+	less_node = null
+	any_node = null
 	
 func set_atlas_vectors(vectors : Array[Vector2i]) -> void:
 	atlas_vectors = vectors

@@ -10,6 +10,10 @@ func _init(_t : TileMap):
 
 func InitializeTileRuleSet() -> void:
 	tileRuleSet = TileRuleSet.new()
+	var full_grass := [Vector2i(1,2)]
+	tileRuleSet.add_branch(["_" , ">=", "_" ,
+							">=", "=" , ">=",
+							"_" , ">=", "_" ], full_grass)
 	var SW := [Vector2i(0,5), Vector2i(0,4), Vector2i(0,3)]
 	tileRuleSet.add_branch(["<>", "=" , ">=",
 							"<" , "=" , "=" ,
@@ -63,29 +67,23 @@ func InitializeTileRuleSet() -> void:
 
 
 func DrawTile(coord : Vector2i, atlasCoord : Vector2i) -> void:
-	tileMap.add_layer(coord.y)
+	# tileMap.add_layer(coord.y)
 	tileMap.set_cell(0, coord, 0, atlasCoord, 0)
 
 
 func GetAtlasCoords(localHeights : Dictionary) -> Array[Vector2i]:
 	var pattern : Array[String] = GetPattern(localHeights)
-	var atlasCoords : Array[Vector2i]
-	
-	if tileDict.has(relations):
-		atlasCoords = tileDict[relations]
-	else:
-		atlasCoords = [Vector2i(1,2)]
+	var atlasCoords : Array[Vector2i] = tileRuleSet.get_atlas(pattern)
 	return atlasCoords
 
 
 func GetPattern(localHeights : Dictionary) -> Array[String]:
-	var patternPositionOrder := ["NW","N","NE","W","C","E","SW","S","SE"]
+	var local_positions := ["NW","N","NE","W","C","E","SW","S","SE"]
 	var pattern : Array[String] = []
-	var center : int = localHeights["C"]
-	for position in patternPositionOrder:
-		if localHeights[position] < center:
+	for position in local_positions:
+		if localHeights[position] < localHeights["C"]:
 			pattern.append("<")
-		elif localHeights[position] > center:
+		elif localHeights[position] > localHeights["C"]:
 			pattern.append(">")
 		else:
 			pattern.append("=")
