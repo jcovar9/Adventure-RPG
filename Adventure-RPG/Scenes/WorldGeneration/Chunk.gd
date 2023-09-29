@@ -17,61 +17,43 @@ func _init(_cP:Vector2i, _cS:int, _mE:int, _nG:NoiseGenerator, _tA:TerrainAssets
 	InitializeHeightMap()
 	RenderChunk()
 
-func RenderChunkTile(chunkTile: Vector2i, lowestVisibleHeight : int):
-	var localHeights : Dictionary = GetLocalHeights(chunkTile, GetLocalVectors(chunkTile))
-	var currentTilePeak : int = chunkTile.y - localHeights["C"]
-	var atlasCoords : Array[Vector2i] = terrainAssets.GetAtlasCoords(localHeights)
-	if currentTilePeak >= lowestVisibleHeight:
-		# our current tile is visible
-		var renderCoord := Vector2i(chunkTile.x, lowestVisibleHeight)
-		while renderCoord.y >= currentTilePeak:
-			# iterate through the blocks we are rendering
-			if renderCoord.y == currentTilePeak:
-				# this is the last block we need to render for this tile
-				terrainAssets.DrawTile(renderCoord, atlasCoords.back())
+func RenderChunkTile(chunk_tile: Vector2i) -> bool:
+	var local_heights : Dictionary = GetLocalHeights(chunk_tile)
+	var current_tile_peak := Vector2i(chunk_tile.x, chunk_tile.y - local_heights["C"])
+	var south_tile_peak := Vector2i(chunk_tile.x, chunk_tile.y + 1 - local_heights["S"])
+	var atlas_coords : Array[Vector2i] = terrainAssets.GetAtlasCoords(local_heights)
+	if atlas_coords[0] == Vector2i(-1,-1):
+		return false
+	var render_coord := Vector2i(south_tile_peak)
+	var tiles_to_render : int = south_tile_peak.y - current_tile_peak.y
+	if tiles_to_render == 1:
+		# current chunk tile must be same height as the south chunk tile
+		# render the peak of the chunk tile
+		terrainAssets.DrawTile(render_coord, atlas_coords.back())
+		render_coord.y -= 1
+	elif tiles_to_render > 1:
+		# current chunk tile must be greater height than south chunk tile
+		# render the base of the chunk tile
+		terrainAssets.DrawTile(render_coord, atlas_coords.front())
+		render_coord.y -= 1
+		tiles_to_render -= 1
+		while tiles_to_render > 1:
+			# iterate through the middle of the chunk tile until the peak
+			terrainAssets.DrawTile(render_coord, atlas_coords[1])
+			render_coord.y -= 1
+			tiles_to_render -= 1
+		# render the peak of the chunk tile
+		terrainAssets.DrawTile(render_coord, atlas_coords.back())
+		render_coord.y -= 1
+	return true
 
 
 func RenderChunk() -> void:
 	for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
-		var currentChunkTile := Vector2i(x, chunkPosition.y + chunkSize - 1)
-		var currentLocalHeights : Dictionary = GetLocalHeights(currentChunkTile, GetLocalVectors(currentChunkTile))
-		var currentTilePeak : int = currentChunkTile.y - currentLocalHeights["C"]
-		var renderCoord := Vector2i(x, currentTilePeak)
-		while currentChunkTile.y > chunkPosition.y - 1:
-			var tilesToRender : int = renderCoord.y - currentTilePeak + 1
-			
-		
-		
 		for y in range(chunkPosition.y + chunkSize - 1, chunkPosition.y - 1, -1):
-			var currentTile := Vector2i(x, y)
-			var localHeights : Dictionary = GetLocalHeights(currentTile, GetLocalVectors(currentTile))
-			var relations : String = GetRelations(localHeights)
-			var atlasCoords : Array[Vector2i] = terrainAssets.GetAtlasCoords(relations)
-			
-			var currentPeak : int = currentTile.y - localHeights["C"]
-			if y == chunkPosition.y + chunkSize - 1:
-				renderCoord.y = currentPeak
-			
-			if renderCoord.y == currentPeak:
-				#just render the top tile cuz thats all that can be seen
-				terrainAssets.DrawTile(renderCoord, atlasCoords[0])
-				renderCoord.y -= 1
-			elif renderCoord.y > currentPeak:
-				#check how many tiles to render
-				var tilesToRender : int = renderCoord.y - currentPeak + 1
-				terrainAssets.DrawTile(renderCoord, atlasCoords[0])
-				renderCoord.y -= 1
-				tilesToRender -= 1
-				while tilesToRender > 1:
-					terrainAssets.DrawTile(renderCoord, atlasCoords[1])
-					renderCoord.y -= 1
-					tilesToRender -= 1
-				terrainAssets.DrawTile(renderCoord, atlasCoords[2])
-				renderCoord.y -= 1
-			else:
-				#do nothing this tile is blocked
-				pass
-			
+			var result : bool = RenderChunkTile(Vector2i(x, y))
+			if result == false:
+				print("Error: got no atlas coords for chunk_tile: " + str(x) + ", " + str(y))
 
 
 func GetRelations(localHeights : Dictionary) -> String:
@@ -93,10 +75,9 @@ func InitializeHeightMap() -> void:
 			heightMap[vector] = noiseGenerator.GetNoise(vector.x,vector.y) * maxElevation
 	
 	for y in range(chunkPosition.y, chunkPosition.y + chunkSize):
-		var row : String = ""
 		for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
-			row += str(int(heightMap[Vector2i(x, y)])) + " "
-		print(row)
+			printraw(str(int(heightMap[Vector2i(x, y)])) + " ")
+		print("")
 	
 	print("\n")
 	
@@ -107,72 +88,69 @@ func InitializeHeightMap() -> void:
 	print("\n")
 	
 	for y in range(chunkPosition.y, chunkPosition.y + chunkSize):
-		var row : String = ""
 		for x in range(chunkPosition.x, chunkPosition.x + chunkSize):
-			row += str(int(heightMap[Vector2i(x, y)])) + " "
-		print(row)
+			printraw(str(int(heightMap[Vector2i(x, y)])) + " ")
+		print("")
 	
 	print("\n")
 
 
 func RecursivelyFixHeight(vector : Vector2i) -> void:
-	var localVectors : Array[Vector2i] = GetLocalVectors(vector)
-	var localHeights : Dictionary = GetLocalHeights(vector, localVectors)
-	var equalHeights   : Array[String] = []
-	var unequalHeights : Array[String] = []
-	var centerHeight : int = localHeights["C"]
-	for key in localHeights:
-		if localHeights[key] == centerHeight:
-			equalHeights.append(key)
-		else:
-			unequalHeights.append(key)
-	if FixHeight(vector, localVectors, unequalHeights):
-		for localVector in localVectors:
-			if localVector in heightMap:
-				RecursivelyFixHeight(localVector)
+	var local_vectors : Array[Vector2i] = GetLocalVectors(vector)
+	var local_heights : Dictionary = GetLocalHeights(vector)
+	var less_heights : Array[String] = []
+	var center_height : int = local_heights["C"]
+	for key in local_heights:
+		if local_heights[key] < center_height:
+			less_heights.append(key)
+	local_vectors.erase(Vector2i(vector))
+	if FixHeight(vector, less_heights, local_heights):
+		for local_vector in local_vectors:
+			if local_vector in heightMap:
+				RecursivelyFixHeight(local_vector)
 
 
-func FixHeight(vector : Vector2i, localVectors : Array[Vector2i], unequalHeights : Array[String]) -> bool:
-	if ifArrayInArray(["N", "S"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
+func FixHeight(vector : Vector2i, less_heights : Array[String]) -> bool:
+	if ifArrayInArray(["N", "S"], less_heights):
+		heightMap[vector] = minf(GetHeight(Vector2i(vector.x, vector.y - 1)), GetHeight(Vector2i(vector.x, vector.y + 1)))
 		return true
-	elif ifArrayInArray(["W", "E"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
+	elif ifArrayInArray(["W", "E"], less_heights):
+		heightMap[vector] = minf(GetHeight(Vector2i(vector.x - 1, vector.y)), GetHeight(Vector2i(vector.x + 1, vector.y)))
 		return true
-	elif ifArrayInArray(["NW", "SE"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
-	elif ifArrayInArray(["NE", "SW"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
-	elif ifArrayInArray(["S", "NW", "E"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
-	elif ifArrayInArray(["S", "NE", "W"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
-	elif ifArrayInArray(["N", "E", "SW"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
-	elif ifArrayInArray(["N", "W", "SE"], unequalHeights):
-		AdjustHeightMap(vector, localVectors)
-		return true
+#	elif ifArrayInArray(["NW", "SE"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
+#	elif ifArrayInArray(["NE", "SW"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
+#	elif ifArrayInArray(["S", "NW", "E"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
+#	elif ifArrayInArray(["S", "NE", "W"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
+#	elif ifArrayInArray(["N", "E", "SW"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
+#	elif ifArrayInArray(["N", "W", "SE"], unequalHeights):
+#		AdjustHeightMap(vector, localVectors)
+#		return true
 	else:
 		return false
 
 
-func AdjustHeightMap(vector : Vector2i, localVectors : Array[Vector2i]) -> void:
-	var heightCounts : Dictionary = {int(GetHeight(vector)) : 1}
-	var mostCommonHeight : int = int(GetHeight(vector))
-	for localVector in localVectors:
-		var localVectorHeight : int = int(GetHeight(localVector))
-		if heightCounts.has(localVectorHeight):
-			heightCounts[localVectorHeight] += 1
-		else:
-			heightCounts[localVectorHeight] = 1
-		if heightCounts[mostCommonHeight] < heightCounts[localVectorHeight]:
-			mostCommonHeight = localVectorHeight
-	heightMap[vector] = mostCommonHeight
+#func AdjustHeightMap(vector : Vector2i, local_vectors : Array[Vector2i]) -> void:
+#	var heightCounts : Dictionary = {int(GetHeight(vector)) : 1}
+#	var most_common_height : int = int(GetHeight(vector))
+#	for local_vector in local_vectors:
+#		var local_vector_height : int = int(GetHeight(local_vector))
+#		if heightCounts.has(local_vector_height):
+#			heightCounts[local_vector_height] += 1
+#		else:
+#			heightCounts[local_vector_height] = 1
+#		if heightCounts[most_common_height] < heightCounts[local_vector_height]:
+#			most_common_height = local_vector_height
+#	heightMap[vector] = most_common_height
 
 
 func ifArrayInArray(keys : Array[String], array : Array[String]) -> bool:
@@ -182,13 +160,13 @@ func ifArrayInArray(keys : Array[String], array : Array[String]) -> bool:
 	return true
 
 
-func GetLocalHeights(vector : Vector2i, localVectors : Array[Vector2i]) -> Dictionary:
-	var localHeights : Dictionary = {}
-	var directions := ["NW","N","NE","W","E","SW","S","SE"]
-	localHeights["C"]  = int(GetHeight(vector))
+func GetLocalHeights(vector : Vector2i) -> Dictionary:
+	var local_heights : Dictionary = {}
+	var local_vectors : Array[Vector2i] = GetLocalVectors(vector)
+	var directions := ["NW","N","NE","W","C","E","SW","S","SE"]
 	for i in range(0, directions.size()):
-		localHeights[directions[i]] = int(GetHeight(localVectors[i]))
-	return localHeights
+		local_heights[directions[i]] = int(GetHeight(local_vectors[i]))
+	return local_heights
 
 
 func GetLocalVectors(vector : Vector2i) -> Array[Vector2i]:
@@ -196,6 +174,7 @@ func GetLocalVectors(vector : Vector2i) -> Array[Vector2i]:
 			Vector2i(vector.x    , vector.y - 1),
 			Vector2i(vector.x + 1, vector.y - 1),
 			Vector2i(vector.x - 1, vector.y    ),
+			Vector2i(vector)                    ,
 			Vector2i(vector.x + 1, vector.y    ),
 			Vector2i(vector.x - 1, vector.y + 1),
 			Vector2i(vector.x    , vector.y + 1),

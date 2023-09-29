@@ -56,17 +56,18 @@ func get_atlas(pattern : Array[String]) -> Array[Vector2i]:
 						next_branches.append(branch.get_child_node("_"))
 				_:
 					print("Error: unexpected pattern type: " + sub_pattern)
+					return [Vector2i(-1,-1)]
 		current_branches = next_branches
 		if current_branches.size() == 0:
 			# we have no branches that fit the pattern
 			print("Error: atlas search stopped at sub_pattern: " + sub_pattern)
-			return []
+			return [Vector2i(-1,-1)]
 	if current_branches.size() == 1:
 		return current_branches[0].get_atlas_vectors()
 	else:
 		printraw("Error: found too many branches for pattern: ")
 		print(pattern)
-		return []
+		return [Vector2i(-1,-1)]
 
 
 
