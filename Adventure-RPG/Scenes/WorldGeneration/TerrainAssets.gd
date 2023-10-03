@@ -47,22 +47,22 @@ func InitializeTileRuleSet() -> void:
 							"=" , "=" , "<" ,
 							">=", "=" , "<>"], SE)
 	
-	var DiagNW := [Vector2i(4,3), Vector2i(4,2), Vector2i(4,1)]
+	var DiagSE := [Vector2i(4,3), Vector2i(4,2), Vector2i(4,1)]
 	tileRuleSet.add_branch(["_", ">=", "<=",
 							">=", "=" , "<" ,
-							"<=", "<" , "<" ], DiagNW)
-	var DiagNE := [Vector2i(5,3), Vector2i(5,2), Vector2i(5,1)]
+							"<=", "<" , "<" ], DiagSE)
+	var DiagSW := [Vector2i(5,3), Vector2i(5,2), Vector2i(5,1)]
 	tileRuleSet.add_branch(["<=", ">=", "_",
 							"<" , "=" , ">=",
-							"<" , "<" , "<="], DiagNE)
-	var DiagSW := [Vector2i(4,4)]
+							"<" , "<" , "<="], DiagSW)
+	var DiagNE := [Vector2i(4,4)]
 	tileRuleSet.add_branch(["<=", "<" , "<" ,
 							">=", "=" , "<" ,
-							"_", ">=", "<="], DiagSW)
-	var DiagSE := [Vector2i(5,4)]
+							"_", ">=", "<="], DiagNE)
+	var DiagNW := [Vector2i(5,4)]
 	tileRuleSet.add_branch(["<" , "<" , "<=",
 							"<" , "=" , ">=",
-							"<=", ">=", "_"], DiagSE)
+							"<=", ">=", "_"], DiagNW)
 
 
 
