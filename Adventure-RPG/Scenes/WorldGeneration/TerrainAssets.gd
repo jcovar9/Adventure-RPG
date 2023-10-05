@@ -1,4 +1,5 @@
 class_name TerrainAssets
+extends Node2D
 
 var tileMap : TileMap
 var tileRuleSet : TileRuleSet
@@ -45,7 +46,7 @@ func InitializeTileRuleSet() -> void:
 	var NE := [Vector2i(2,1)]
 	tileRuleSet.add_branch(["<>", "<" , "_" ,
 							"=" , "=" , "<" ,
-							">=", "=" , "<>"], SE)
+							">=", "=" , "<>"], NE)
 	
 	var DiagSE := [Vector2i(4,3), Vector2i(4,2), Vector2i(4,1)]
 	tileRuleSet.add_branch(["_", ">=", "<=",

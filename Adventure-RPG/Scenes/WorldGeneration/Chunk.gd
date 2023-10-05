@@ -1,4 +1,5 @@
 class_name Chunk
+extends Node2D
 
 
 var chunkPosition : Vector2i
@@ -104,7 +105,7 @@ func RecursivelyFixHeight(vector : Vector2i) -> void:
 		if local_heights[key] < center_height:
 			less_heights.append(key)
 	local_vectors.erase(Vector2i(vector))
-	if FixHeight(vector, less_heights, local_heights):
+	if FixHeight(vector, less_heights):
 		for local_vector in local_vectors:
 			if local_vector in heightMap:
 				RecursivelyFixHeight(local_vector)

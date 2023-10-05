@@ -1,4 +1,5 @@
 class_name NoiseGenerator
+extends Node2D
 
 var noiseSeed : int
 var noiseScale : float
@@ -11,7 +12,7 @@ var max_noise_value : float
 var min_noise_value : float
 var fastNoise : FastNoiseLite
 
-func _init(_se:int, _sc:float, _o:int, _p:float, _l:float, bounds:Array[int]) -> void:
+func _init(_se:int, _sc:float, _o:int, _p:float, _l:float) -> void:
 	if (_sc <= 0):
 		_sc = 0.0001
 	noiseSeed = _se
@@ -52,8 +53,8 @@ func SetNoiseBounds() -> void:
 
 
 func GetNoise(x : int, y : int) -> float:
-	var amplitude : float         = 1.0
-	var frequency : float         = 1.0
+	var amplitude : float         = max_noise_value / 2
+	var frequency : float         = .05
 	var total_noise_value : float = 0.0
 	
 	for i in range(0, octaves):

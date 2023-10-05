@@ -1,4 +1,5 @@
 class_name TileRuleSet
+extends Node2D
 
 var root_node : RuleSetNode
 

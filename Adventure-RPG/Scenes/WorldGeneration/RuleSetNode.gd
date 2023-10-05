@@ -1,4 +1,5 @@
 class_name RuleSetNode
+extends Node2D
 
 var atlas_vectors : Array[Vector2i]
 var less_greater_node : RuleSetNode
