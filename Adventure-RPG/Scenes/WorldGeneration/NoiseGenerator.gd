@@ -1,70 +1,59 @@
 class_name NoiseGenerator
 extends Node2D
 
-var noiseSeed : int
-var noiseScale : float
-var octaves : int
-var persistance : float
-var lacunarity : float
-var rng : RandomNumberGenerator
-var octaveOffsets : Array[Vector2]
-var max_noise_value : float
-var min_noise_value : float
-var fastNoise : FastNoiseLite
+var my_seed : int
+var my_scale : float
+var my_octaves : int
+var my_persistence : float
+var my_lacunarity : float
+var my_octave_offsets : Array[Vector2]
+var my_max : float
+var my_min : float
+var my_fast_noise : FastNoiseLite
 
-func _init(_se:int, _sc:float, _o:int, _p:float, _l:float) -> void:
-	if (_sc <= 0):
-		_sc = 0.0001
-	noiseSeed = _se
-	noiseScale = _sc
-	octaves = _o
-	persistance = _p
-	lacunarity = _l
-	rng = RandomNumberGenerator.new()
-	rng.set_seed(noiseSeed)
-	
-	octaveOffsets = []
-	for i in range(0,octaves):
+func _init(_seed:int, _scale:float, _octaves:int, _persistence:float, _lacunarity:float) -> void:
+	if (_scale <= 0):
+		_scale = 0.0001
+	my_seed = _seed
+	my_scale = _scale
+	my_octaves = _octaves
+	my_persistence = _persistence
+	my_lacunarity = _lacunarity
+	SetOctaveOffsets()
+	SetNoiseBounds()
+	my_fast_noise = FastNoiseLite.new()
+	my_fast_noise.set_seed(my_seed)
+
+func SetOctaveOffsets() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.set_seed(my_seed)
+	my_octave_offsets = []
+	for i in range(0, my_octaves):
 		var offsetX : float = rng.randf_range(-100000, 100000)
 		var offsetY : float = rng.randf_range(-100000, 100000)
-		octaveOffsets.append(Vector2(offsetX, offsetY))
-	
-	SetNoiseBounds()
-	
-	fastNoise = FastNoiseLite.new()
-	fastNoise.set_seed(noiseSeed)
+		my_octave_offsets.append(Vector2(offsetX, offsetY))
 
 func SetNoiseBounds() -> void:
 	var amplitude : float = 1.0
-	var total_noise_value : float = 0.0
-	for i in range(0, octaves):
-		var noiseValue : float = -1.0 * 2 - 1
-		total_noise_value += noiseValue * amplitude
-		amplitude *= persistance
-	min_noise_value = total_noise_value
-	
-	amplitude = 1.0
-	total_noise_value = 0.0
-	for i in range(0, octaves):
-		var noiseValue : float = 1.0 * 2 - 1
-		total_noise_value += noiseValue * amplitude
-		amplitude *= persistance
-	max_noise_value = total_noise_value
-
+	var min_elevation : float = 0.0
+	var max_elevation : float = 0.0
+	for i in range(0, my_octaves):
+		my_min += -1.0 * amplitude
+		my_max +=  1.0 * amplitude
+		amplitude *= my_persistence
 
 func GetNoise(x : int, y : int) -> float:
-	var amplitude : float         = max_noise_value / 2
-	var frequency : float         = .05
-	var total_noise_value : float = 0.0
+	var amplitude : float = 1.0
+	var frequency : float = .05
+	var elevation : float = 0.0
 	
-	for i in range(0, octaves):
-		var sampleX : float = x / noiseScale * frequency + octaveOffsets[i].x
-		var sampleY : float = y / noiseScale * frequency + octaveOffsets[i].y
+	for i in range(0, my_octaves):
+		var sampleX : float = x / my_scale * frequency + my_octave_offsets[i].x
+		var sampleY : float = y / my_scale * frequency + my_octave_offsets[i].y
+		var noiseValue : float = my_fast_noise.get_noise_2d(sampleX, sampleY)
 		
-		var noiseValue : float = fastNoise.get_noise_2d(sampleX, sampleY) * 2 - 1
-		
-		total_noise_value += noiseValue * amplitude
-		amplitude         *= persistance
-		frequency         *= lacunarity
+		elevation += noiseValue * amplitude
+		amplitude *= my_persistence
+		frequency *= my_lacunarity
 	
-	return inverse_lerp(min_noise_value, max_noise_value, total_noise_value)
+	return clamp(inverse_lerp(my_min, my_max, elevation), 0.0, 1.0)

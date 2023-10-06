@@ -1,6 +1,6 @@
 [gd_scene load_steps=7 format=3 uid="uid://dtph4rbmhga4y"]
 
-[ext_resource type="Script" path="res://Scenes/WorldGeneration/ChunkGenerator.gd" id="1_oeuj7"]
+[ext_resource type="Script" path="res://Scenes/WorldGeneration/Terrain.gd" id="1_oeuj7"]
 [ext_resource type="Script" path="res://Scenes/WorldGeneration/TerrainAssets.gd" id="2_0xfn8"]
 [ext_resource type="Script" path="res://Scenes/WorldGeneration/NoiseGenerator.gd" id="4_nop1y"]
 [ext_resource type="Script" path="res://Scenes/WorldGeneration/Chunk.gd" id="5_nj6nk"]
