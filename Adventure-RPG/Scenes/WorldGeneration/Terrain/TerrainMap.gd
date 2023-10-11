@@ -67,6 +67,18 @@ func get_3x3_heights(vecs : Dictionary) -> Dictionary:
 			"S" : get_height(vecs["S"]),
 			"SE" : get_height(vecs["SE"])}
 
+# returns a 3x3 of TerrainCells from vectors in vecs
+func get_3x3_terrain_cells(vecs : Dictionary) -> Dictionary:
+	return {"NW" : terrain_map[vecs["NW"]],
+			"N" : terrain_map[vecs["N"]],
+			"NE" : terrain_map[vecs["NE"]],
+			"W" : terrain_map[vecs["W"]],
+			"C" : terrain_map[vecs["C"]],
+			"E" : terrain_map[vecs["E"]],
+			"SW" : terrain_map[vecs["SW"]],
+			"S" : terrain_map[vecs["S"]],
+			"SE" : terrain_map[vecs["SE"]]}
+
 # checks if the height is invalid and sets the filtered_height appropriately
 func filter_terrain_cell_height(vec : Vector2i, heights : Dictionary) -> bool:
 	var my_terrain_cell : TerrainCell = terrain_map[vec]
