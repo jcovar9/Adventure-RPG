@@ -47,14 +47,6 @@ func get_3x3_vectors(vec : Vector2i) -> Dictionary:
 			"S" : Vector2i(vec.x, vec.y + 1),
 			"SE" : Vector2i(vec.x + 1, vec.y + 1)}
 
-# gets the filtered_height if it is set, else gets the unfiltered_height
-func get_height(vec : Vector2i) -> int:
-	var terrain_cell : TerrainCell = terrain_map[vec]
-	if(terrain_cell.filtered_height != -1):
-		return terrain_cell.filtered_height
-	else:
-		return int(terrain_cell.unfiltered_height)
-
 # returns a 3x3 of heights from vectors in vecs
 func get_3x3_heights(vecs : Dictionary) -> Dictionary:
 	return {"NW" : get_height(vecs["NW"]),
@@ -66,6 +58,14 @@ func get_3x3_heights(vecs : Dictionary) -> Dictionary:
 			"SW" : get_height(vecs["SW"]),
 			"S" : get_height(vecs["S"]),
 			"SE" : get_height(vecs["SE"])}
+
+# gets the filtered_height if it is set, else gets the unfiltered_height
+func get_height(vec : Vector2i) -> int:
+	var terrain_cell : TerrainCell = terrain_map[vec]
+	if(terrain_cell.filtered_height != -1):
+		return terrain_cell.filtered_height
+	else:
+		return int(terrain_cell.unfiltered_height)
 
 # returns a 3x3 of TerrainCells from vectors in vecs
 func get_3x3_terrain_cells(vecs : Dictionary) -> Dictionary:
